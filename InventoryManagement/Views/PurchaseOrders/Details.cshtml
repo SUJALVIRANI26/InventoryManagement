@@ -1,0 +1,47 @@
+@model PurchaseOrder
+@{
+    ViewData["Title"] = $"Purchase #{Model.Id}";
+    var logs = ViewBag.Logs as List<BacklogFulfillmentLog> ?? [];
+}
+
+<div class="panel mb-3">
+    <p><strong>Seller:</strong> @Model.Supplier.Name</p>
+    <p><strong>Date:</strong> @Model.OrderDate.ToLocalTime().ToString("g")</p>
+    <p><strong>Total:</strong> @Model.TotalAmount.ToString("N2")</p>
+    <p><strong>Notes:</strong> @(Model.Notes ?? "—")</p>
+</div>
+
+<div class="panel mb-3">
+    <h5>Lines</h5>
+    <table class="table">
+        <thead><tr><th>Product</th><th>Qty</th><th>Unit cost</th><th>Line</th></tr></thead>
+        <tbody>
+        @foreach (var i in Model.Items)
+        {
+            <tr>
+                <td>@i.Product.Name</td>
+                <td>@i.Quantity</td>
+                <td>@i.UnitCost.ToString("N2")</td>
+                <td>@i.LineTotal.ToString("N2")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<div class="panel">
+    <h5>Backlog check after this receipt</h5>
+    @if (logs.Count == 0)
+    {
+        <p class="mb-0">No open backlog for these products. Remaining stock is available for new sales.</p>
+    }
+    else
+    {
+        <ul class="mb-0">
+            @foreach (var log in logs)
+            {
+                <li>@log.Message</li>
+            }
+        </ul>
+    }
+</div>

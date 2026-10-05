@@ -1,8 +1,39 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Inventory Management";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="hero mb-4">
+    <h1>Stock, sales, and backlog in one place</h1>
+    <p class="mb-4">Admin creates inventory managers and sales users. Managers buy from sellers and refill backlog first. Sales can set any price; oversold quantity waits in backlog until stock arrives.</p>
+    <a class="btn btn-light" asp-area="Identity" asp-page="/Account/Login">Sign in</a>
 </div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="panel h-100">
+            <h5>Admin</h5>
+            <p>Create, update, and remove inventory managers and sales team accounts. Review purchase, sales, profit, and the most sold item.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="panel h-100">
+            <h5>Inventory manager</h5>
+            <p>Purchase from sellers, watch low-quantity alerts, and see purchase graphs. Incoming stock always fills backlog before it shows as available.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="panel h-100">
+            <h5>Sales team</h5>
+            <p>Sell at a price you choose. If the order is larger than stock, it goes to backlog until a purchase can fulfill it, then the order can proceed.</p>
+        </div>
+    </div>
+</div>
+
+@* <div class="panel mt-4">
+    <h6>Demo accounts</h6>
+    <ul class="mb-0">
+        <li>Admin: <code>admin@ims.local</code> / <code>Admin@123</code></li>
+        <li>Inventory manager: <code>manager@ims.local</code> / <code>Manager@123</code></li>
+        <li>Sales: <code>sales@ims.local</code> / <code>Sales@123</code></li>
+    </ul>
+</div> *@

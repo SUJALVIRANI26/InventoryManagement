@@ -1,0 +1,38 @@
+@model Product
+@{
+    ViewData["Title"] = Model.Id == 0 ? "Add product" : "Edit product";
+}
+
+<div class="panel" style="max-width:640px;">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="CurrentStock" />
+        <input type="hidden" asp-for="AverageCost" />
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label"></label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Sku" class="form-label"></label>
+            <input asp-for="Sku" class="form-control" />
+            <span asp-validation-for="Sku" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="ReorderLevel" class="form-label"></label>
+            <input asp-for="ReorderLevel" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label asp-for="SuggestedPrice" class="form-label"></label>
+            <input asp-for="SuggestedPrice" class="form-control" />
+        </div>
+        <div class="form-check mb-3">
+            <input asp-for="IsActive" class="form-check-input" />
+            <label asp-for="IsActive" class="form-check-label">Active</label>
+        </div>
+        <p class="form-text">Stock and average cost change only through purchase orders (and backlog allocation).</p>
+        <button class="btn btn-success" type="submit">Save</button>
+        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+    </form>
+</div>

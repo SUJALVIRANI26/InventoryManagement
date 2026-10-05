@@ -1,0 +1,57 @@
+@model AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin dashboard";
+}
+
+<div class="stat-grid">
+    <div class="stat-card"><div class="label">Users</div><div class="value">@Model.UserCount</div></div>
+    <div class="stat-card"><div class="label">Sales</div><div class="value">@Model.TotalSales.ToString("N2")</div></div>
+    <div class="stat-card"><div class="label">Purchases</div><div class="value">@Model.TotalPurchases.ToString("N2")</div></div>
+    <div class="stat-card"><div class="label">Profit</div><div class="value">@Model.TotalProfit.ToString("N2")</div></div>
+    <div class="stat-card"><div class="label">Most sold item</div><div class="value fs-5">@Model.MostSoldItem <small class="text-muted">(@Model.MostSoldQty)</small></div></div>
+    <div class="stat-card"><div class="label">Open backlog</div><div class="value">@Model.OpenBacklogs</div></div>
+</div>
+
+<div class="panel mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Profit</h5>
+        <div>
+            <button type="button" class="btn btn-sm btn-outline-secondary period-btn profit-period active" data-period="daily">Daily</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary period-btn profit-period" data-period="weekly">Weekly</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary period-btn profit-period" data-period="monthly">Monthly</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary period-btn profit-period" data-period="yearly">Yearly</button>
+        </div>
+    </div>
+    <canvas data-chart data-url="@Url.Action("Chart", "Admin")" data-type="profit" data-label="Profit" data-buttons=".profit-period"></canvas>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Sales</h5>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary period-btn sales-period active" data-period="daily">Daily</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary period-btn sales-period" data-period="weekly">Weekly</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary period-btn sales-period" data-period="monthly">Monthly</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary period-btn sales-period" data-period="yearly">Yearly</button>
+                </div>
+            </div>
+            <canvas data-chart data-url="@Url.Action("Chart", "Admin")" data-type="sales" data-label="Sales" data-buttons=".sales-period"></canvas>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Purchases</h5>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary period-btn purchase-period active" data-period="daily">Daily</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary period-btn purchase-period" data-period="weekly">Weekly</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary period-btn purchase-period" data-period="monthly">Monthly</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary period-btn purchase-period" data-period="yearly">Yearly</button>
+                </div>
+            </div>
+            <canvas data-chart data-url="@Url.Action("Chart", "Admin")" data-type="purchase" data-label="Purchases" data-buttons=".purchase-period"></canvas>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,53 @@
+@model InventoryDashboardViewModel
+@{
+    ViewData["Title"] = "Inventory dashboard";
+}
+
+@if (Model.LowStockCount > 0)
+{
+    <div class="alert alert-warning alert-low">
+        Low quantity alert: @Model.LowStockCount product(s) are at or below reorder level.
+    </div>
+}
+
+<div class="stat-grid">
+    <div class="stat-card"><div class="label">Purchase total</div><div class="value">@Model.TotalPurchases.ToString("N2")</div></div>
+    <div class="stat-card"><div class="label">Purchase orders</div><div class="value">@Model.PurchaseCount</div></div>
+    <div class="stat-card"><div class="label">Low stock</div><div class="value">@Model.LowStockCount</div></div>
+    <div class="stat-card"><div class="label">Open backlog</div><div class="value">@Model.OpenBacklogs</div></div>
+</div>
+
+<div class="panel mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Purchase orders</h5>
+        <div>
+            <button type="button" class="btn btn-sm btn-outline-secondary period-btn purchase-period active" data-period="daily">Daily</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary period-btn purchase-period" data-period="weekly">Weekly</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary period-btn purchase-period" data-period="monthly">Monthly</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary period-btn purchase-period" data-period="yearly">Yearly</button>
+        </div>
+    </div>
+    <canvas data-chart data-url="@Url.Action("Chart", "Inventory")" data-label="Purchases" data-buttons=".purchase-period"></canvas>
+</div>
+
+<div class="panel">
+    <h5>Low quantity items</h5>
+    <table class="table">
+        <thead><tr><th>Product</th><th>SKU</th><th>Stock</th><th>Alert at</th></tr></thead>
+        <tbody>
+        @foreach (var p in Model.LowStockProducts)
+        {
+            <tr class="table-warning">
+                <td>@p.Name</td>
+                <td>@p.Sku</td>
+                <td>@p.CurrentStock</td>
+                <td>@p.ReorderLevel</td>
+            </tr>
+        }
+        @if (Model.LowStockProducts.Count == 0)
+        {
+            <tr><td colspan="4">All products are above reorder level.</td></tr>
+        }
+        </tbody>
+    </table>
+</div>

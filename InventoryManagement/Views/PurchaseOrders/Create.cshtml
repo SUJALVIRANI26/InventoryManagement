@@ -1,0 +1,45 @@
+@model PurchaseOrderFormViewModel
+@{
+    ViewData["Title"] = "New purchase";
+}
+
+<div class="panel">
+    <p class="text-muted">Receiving a purchase increases stock, then immediately fills the oldest backlog first. Only leftover quantity remains as current stock.</p>
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="mb-3">
+            <label asp-for="SupplierId" class="form-label">Seller</label>
+            <select asp-for="SupplierId" asp-items="Model.Suppliers" class="form-select">
+                <option value="">Select seller</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Notes" class="form-label"></label>
+            <input asp-for="Notes" class="form-control" />
+        </div>
+        <h6>Lines</h6>
+        <div id="purchase-lines">
+            @for (var i = 0; i < Model.Lines.Count; i++)
+            {
+                <div class="row g-2 mb-2" data-line-row>
+                    <div class="col-md-5">
+                        <select name="Lines[@i].ProductId" asp-for="Lines[i].ProductId" asp-items="Model.Products" class="form-select">
+                            <option value="0">Product</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input name="Lines[@i].Quantity" asp-for="Lines[i].Quantity" class="form-control" placeholder="Qty" />
+                    </div>
+                    <div class="col-md-4">
+                        <input name="Lines[@i].UnitCost" asp-for="Lines[i].UnitCost" class="form-control" placeholder="Unit cost" />
+                    </div>
+                </div>
+            }
+        </div>
+        <button type="button" class="btn btn-outline-secondary btn-sm mb-3" data-add-row="#purchase-lines">Add line</button>
+        <div>
+            <button class="btn btn-success" type="submit">Receive purchase</button>
+            <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+        </div>
+    </form>
+</div>

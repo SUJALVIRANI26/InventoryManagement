@@ -1,0 +1,27 @@
+@model IEnumerable<SaleOrder>
+@{
+    ViewData["Title"] = "Sales orders";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a class="btn btn-success" asp-action="Create">New sale</a>
+</div>
+<div class="panel p-0">
+    <table class="table mb-0">
+        <thead><tr><th>#</th><th>Date</th><th>Customer</th><th>Amount</th><th>Profit</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var o in Model)
+        {
+            <tr>
+                <td>@o.Id</td>
+                <td>@o.OrderDate.ToLocalTime().ToString("g")</td>
+                <td>@o.CustomerName</td>
+                <td>@o.TotalAmount.ToString("N2")</td>
+                <td>@o.Profit.ToString("N2")</td>
+                <td>@o.Status</td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@o.Id">Details</a></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,49 @@
+@model IEnumerable<BacklogItem>
+@{
+    ViewData["Title"] = "Backlog";
+}
+
+<div class="panel p-0">
+    <table class="table mb-0">
+        <thead>
+            <tr>
+                <th>Sale</th>
+                <th>Customer</th>
+                <th>Product</th>
+                <th>Remaining</th>
+                <th>Created</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var b in Model)
+        {
+            <tr class="@(b.SaleOrder.Status == SaleOrderStatus.Cancelled ? "table-secondary" : b.IsFulfilled ? "" : "table-warning")">
+                <td>#@b.SaleOrderId</td>
+                <td>@b.SaleOrder.CustomerName</td>
+                <td>@b.Product.Name</td>
+                <td>@b.RemainingQuantity</td>
+                <td>@b.CreatedAt.ToLocalTime().ToString("g")</td>
+                <td>
+                    @if (b.SaleOrder.Status == SaleOrderStatus.Cancelled)
+                    {
+                        <span>Order cancelled — backlog expired</span>
+                    }
+                    else if (b.IsFulfilled)
+                    {
+                        <span>Fulfilled — order can proceed</span>
+                    }
+                    else
+                    {
+                        <span>Waiting for stock</span>
+                    }
+                </td>
+            </tr>
+        }
+        @if (!Model.Any())
+        {
+            <tr><td colspan="6">No backlog records.</td></tr>
+        }
+        </tbody>
+    </table>
+</div>

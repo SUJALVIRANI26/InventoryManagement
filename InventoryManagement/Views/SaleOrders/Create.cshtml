@@ -1,0 +1,44 @@
+@model SaleOrderFormViewModel
+@{
+    ViewData["Title"] = "New sale";
+}
+
+<div class="panel">
+    <p class="text-muted">Set any selling price. If quantity is higher than current stock, the extra goes to backlog until inventory receives a purchase.</p>
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="mb-3">
+            <label asp-for="CustomerName" class="form-label"></label>
+            <input asp-for="CustomerName" class="form-control" />
+            <span asp-validation-for="CustomerName" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Notes" class="form-label"></label>
+            <input asp-for="Notes" class="form-control" />
+        </div>
+        <h6>Lines</h6>
+        <div id="sale-lines">
+            @for (var i = 0; i < Model.Lines.Count; i++)
+            {
+                <div class="row g-2 mb-2" data-line-row>
+                    <div class="col-md-6">
+                        <select name="Lines[@i].ProductId" asp-for="Lines[i].ProductId" asp-items="Model.Products" class="form-select">
+                            <option value="0">Product</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input name="Lines[@i].Quantity" asp-for="Lines[i].Quantity" class="form-control" placeholder="Qty" />
+                    </div>
+                    <div class="col-md-3">
+                        <input name="Lines[@i].UnitPrice" asp-for="Lines[i].UnitPrice" class="form-control" placeholder="Selling price" />
+                    </div>
+                </div>
+            }
+        </div>
+        <button type="button" class="btn btn-outline-secondary btn-sm mb-3" data-add-row="#sale-lines">Add line</button>
+        <div>
+            <button class="btn btn-success" type="submit">Place order</button>
+            <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,14 @@
+@model UserFormViewModel
+@{
+    ViewData["Title"] = "Create user";
+}
+
+<div class="panel" style="max-width:640px;">
+    <form method="post">
+        <partial name="_Form" model="Model" />
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

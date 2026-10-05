@@ -1,0 +1,64 @@
+@model SaleOrder
+@{
+    ViewData["Title"] = $"Sale #{Model.Id}";
+}
+
+<div class="panel mb-3">
+    <p><strong>Customer:</strong> @Model.CustomerName</p>
+    <p><strong>Date:</strong> @Model.OrderDate.ToLocalTime().ToString("g")</p>
+    <p><strong>Status:</strong> @Model.Status</p>
+    @if (Model.CancelledAt is DateTime cancelled)
+    {
+        <p><strong>Cancelled:</strong> @cancelled.ToLocalTime().ToString("g") because the backlog was not fulfilled in time.</p>
+    }
+    <p><strong>Amount:</strong> @Model.TotalAmount.ToString("N2") · <strong>Cost (fulfilled):</strong> @Model.TotalCost.ToString("N2") · <strong>Profit:</strong> @Model.Profit.ToString("N2")</p>
+    @if (Model.Status == SaleOrderStatus.ReadyToProceed)
+    {
+        <form asp-action="Proceed" asp-route-id="@Model.Id" method="post">
+            <button class="btn btn-success" type="submit">Proceed — backlog fulfilled</button>
+        </form>
+    }
+</div>
+
+<div class="panel mb-3">
+    <h5>Lines</h5>
+    <table class="table">
+        <thead><tr><th>Product</th><th>Requested</th><th>Fulfilled</th><th>Pending</th><th>Your price</th></tr></thead>
+        <tbody>
+        @foreach (var i in Model.Items)
+        {
+            <tr>
+                <td>@i.Product.Name</td>
+                <td>@i.QuantityRequested</td>
+                <td>@i.QuantityFulfilled</td>
+                <td>@i.QuantityPending</td>
+                <td>@i.UnitPrice.ToString("N2")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<div class="panel">
+    <h5>Backlog</h5>
+    @if (!Model.BacklogItems.Any())
+    {
+        <p class="mb-0">This order did not need backlog. It was filled from current stock.</p>
+    }
+    else
+    {
+        <ul class="mb-0">
+            @foreach (var b in Model.BacklogItems)
+            {
+                <li>
+                    Product #@b.ProductId —
+                    @(Model.Status == SaleOrderStatus.Cancelled ? "Cancelled with order" : b.IsFulfilled ? "Fulfilled" : $"Waiting {b.RemainingQuantity}")
+                    @if (b.FulfilledAt is DateTime done)
+                    {
+                        <span>— completed @done.ToLocalTime().ToString("g")</span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</div>
