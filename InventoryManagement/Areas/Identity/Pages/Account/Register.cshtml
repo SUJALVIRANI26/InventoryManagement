@@ -1,0 +1,47 @@
+@page
+@model InventoryManagement.Areas.Identity.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Set up administrator";
+}
+
+<div class="panel" style="max-width:480px;">
+@if (Model.CanCreateFirstAdmin)
+{
+    <h2>Set up administrator</h2>
+    <p class="text-muted">Create the first administrator account for this installation.</p>
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="mb-3">
+            <label asp-for="Input.FullName" class="form-label"></label>
+            <input asp-for="Input.FullName" class="form-control" autocomplete="name" />
+            <span asp-validation-for="Input.FullName" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Input.Email" class="form-label"></label>
+            <input asp-for="Input.Email" class="form-control" autocomplete="username" />
+            <span asp-validation-for="Input.Email" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Input.Password" class="form-label"></label>
+            <input asp-for="Input.Password" class="form-control" autocomplete="new-password" />
+            <span asp-validation-for="Input.Password" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Input.ConfirmPassword" class="form-label"></label>
+            <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" />
+            <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+        </div>
+        <button class="btn btn-success w-100" type="submit">Create administrator</button>
+    </form>
+}
+else
+{
+    <h2>Registration is closed</h2>
+    <p>Only an administrator can create additional accounts.</p>
+    <a class="btn btn-primary" asp-page="./Login">Sign in</a>
+}
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

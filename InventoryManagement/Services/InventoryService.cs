@@ -1,6 +1,8 @@
 using InventoryManagement.Data;
 using InventoryManagement.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace InventoryManagement.Services;
 
@@ -29,8 +31,10 @@ public interface IInventoryService
     Task<int> ExpireBackloggedOrdersAsync();
 }
 
-public class InventoryService(ApplicationDbContext db) : IInventoryService
+public class InventoryService(ApplicationDbContext db, ILogger<InventoryService>? logger = null) : IInventoryService
 {
+    private readonly ILogger<InventoryService> _logger = logger ?? NullLogger<InventoryService>.Instance;
+
     public async Task<PurchaseReceiveResult> ReceivePurchaseAsync(
         int supplierId,
         string managerUserId,
@@ -79,6 +83,8 @@ public class InventoryService(ApplicationDbContext db) : IInventoryService
         purchase.TotalAmount = purchase.Items.Sum(i => i.Quantity * i.UnitCost);
         db.PurchaseOrders.Add(purchase);
         await db.SaveChangesAsync();
+
+        _logger.LogInformation("Received purchase order #{PurchaseOrderId} for supplier {SupplierId}.", purchase.Id, supplierId);
 
         var messages = new List<string> { $"Purchase #{purchase.Id} received. Incoming stock applied." };
 
@@ -162,6 +168,9 @@ public class InventoryService(ApplicationDbContext db) : IInventoryService
         RecalculateSale(sale, createdNow: true);
         db.SaleOrders.Add(sale);
         await db.SaveChangesAsync();
+
+        _logger.LogInformation("Placed sale order #{SaleOrderId} for customer '{CustomerName}'.", sale.Id, customerName);
+
         return sale;
     }
 
@@ -183,6 +192,8 @@ public class InventoryService(ApplicationDbContext db) : IInventoryService
         sale.Status = SaleOrderStatus.Completed;
         sale.CompletedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
+
+        _logger.LogInformation("Sale order #{SaleOrderId} marked completed.", saleOrderId);
     }
 
     public async Task<int> ExpireBackloggedOrdersAsync()
@@ -213,6 +224,7 @@ public class InventoryService(ApplicationDbContext db) : IInventoryService
         if (expiredOrders.Count > 0)
         {
             await db.SaveChangesAsync();
+            _logger.LogInformation("Cancelled {Count} expired backlog order(s).", expiredOrders.Count);
         }
 
         return expiredOrders.Count;
@@ -302,8 +314,12 @@ public class InventoryService(ApplicationDbContext db) : IInventoryService
     private static string AppendCancellationNote(string? notes)
     {
         const string cancellation = "Order automatically cancelled because its backlog was not fulfilled within the allowed period.";
-        return string.IsNullOrWhiteSpace(notes)
-            ? cancellation
-            : $"{notes}\n{cancellation}"[..400];
+        if (string.IsNullOrWhiteSpace(notes))
+        {
+            return cancellation;
+        }
+
+        var combined = $"{notes}\n{cancellation}";
+        return combined.Length > 400 ? combined[..400] : combined;
     }
 }

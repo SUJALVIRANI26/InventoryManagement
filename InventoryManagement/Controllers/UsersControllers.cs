@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace InventoryManagement.Controllers
 {
     [Authorize(Roles = AppRoles.Admin)]
-    public class UsersControllers(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager) : Controller
+    public class UsersController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager) : Controller
     {
         public async Task<IActionResult> Index()
         {
