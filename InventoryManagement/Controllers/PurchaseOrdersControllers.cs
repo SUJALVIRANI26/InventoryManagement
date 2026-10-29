@@ -1,4 +1,4 @@
-﻿using InventoryManagement.Data;
+using InventoryManagement.Data;
 using InventoryManagement.Models;
 using InventoryManagement.Models.ViewModels;
 using InventoryManagement.Services;
@@ -9,11 +9,19 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace InventoryManagement.Controllers
 {
     [Authorize(Roles = AppRoles.InventoryManager)]
-    public class PurchaseOrdersController(ApplicationDbContext db, IInventoryService inventory, UserManager<ApplicationUser> users) : Controller
+    public class PurchaseOrdersController(
+        ApplicationDbContext db,
+        IInventoryService inventory,
+        UserManager<ApplicationUser> users,
+        ILogger<PurchaseOrdersController>? logger = null) : Controller
     {
+        private readonly ILogger<PurchaseOrdersController> _logger = logger ?? NullLogger<PurchaseOrdersController>.Instance;
         public async Task<IActionResult> Index()
         {
             var orders = await db.PurchaseOrders
@@ -62,23 +70,27 @@ namespace InventoryManagement.Controllers
 
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Purchase order validation failed for supplier {SupplierId}.", model.SupplierId);
                 return View(model);
             }
 
             var user = await users.GetUserAsync(User);
             try
             {
+                _logger.LogInformation("Receiving purchase order for supplier {SupplierId} by user {UserId}.", model.SupplierId, user?.Id);
                 var result = await inventory.ReceivePurchaseAsync(
                     model.SupplierId,
                     user!.Id,
                     model.Lines.Select(l => (l.ProductId, l.Quantity, l.UnitCost)),
                     model.Notes);
 
+                _logger.LogInformation("Purchase order #{PurchaseOrderId} created successfully.", result.PurchaseOrderId);
                 TempData["Status"] = string.Join(" ", result.Messages);
                 return RedirectToAction(nameof(Details), new { id = result.PurchaseOrderId });
             }
             catch (InvalidOperationException ex)
             {
+                _logger.LogWarning(ex, "Failed to receive purchase order for supplier {SupplierId}.", model.SupplierId);
                 ModelState.AddModelError(string.Empty, ex.Message);
                 return View(model);
             }

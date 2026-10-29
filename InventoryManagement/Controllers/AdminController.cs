@@ -6,12 +6,22 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace InventoryManagement.Controllers;
+
 [Authorize(Roles = AppRoles.Admin)]
-public class AdminController(ApplicationDbContext db, ReportService reports) : Controller
+public class AdminController(
+    ApplicationDbContext db,
+    ReportService reports,
+    ILogger<AdminController>? logger = null) : Controller
 {
+    private readonly ILogger<AdminController> _logger = logger ?? NullLogger<AdminController>.Instance;
+
     public async Task<IActionResult> Index()
     {
+        _logger.LogInformation("Admin dashboard requested.");
         var most = await reports.MostSoldAsync();
         var vm = new AdminDashboardViewModel
         {
@@ -26,9 +36,11 @@ public class AdminController(ApplicationDbContext db, ReportService reports) : C
         };
         return View(vm);
     }
+
     [HttpGet]
     public async Task<IActionResult> Chart(string type = "profit", string period = ReportPeriod.Daily)
     {
+        _logger.LogInformation("Admin chart data requested. Type: {Type}, Period: {Period}", type, period);
         var data = type switch
         {
             "sales" => await reports.SalesChartAsync(period),

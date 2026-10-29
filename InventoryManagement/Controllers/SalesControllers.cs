@@ -8,15 +8,25 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace InventoryManagement.Controllers;
 
 [Authorize(Roles = AppRoles.SalesTeam)]
-public class SalesController(ApplicationDbContext db, ReportService reports, UserManager<ApplicationUser> users) : Controller
+public class SalesController(
+    ApplicationDbContext db,
+    ReportService reports,
+    UserManager<ApplicationUser> users,
+    ILogger<SalesController>? logger = null) : Controller
 {
+    private readonly ILogger<SalesController> _logger = logger ?? NullLogger<SalesController>.Instance;
+
     public async Task<IActionResult> Index()
     {
         var user = await users.GetUserAsync(User);
+        _logger.LogInformation("Sales dashboard requested for user '{UserId}'.", user?.Id);
+
         var mine = db.SaleOrders.Where(s => s.SalesUserId == user!.Id && s.Status != SaleOrderStatus.Cancelled);
         var most = await db.SaleOrderItems
             .Where(i => i.SaleOrder.SalesUserId == user!.Id && i.SaleOrder.Status != SaleOrderStatus.Cancelled)
@@ -40,11 +50,11 @@ public class SalesController(ApplicationDbContext db, ReportService reports, Use
     public async Task<IActionResult> Chart(string type = "sales", string period = ReportPeriod.Daily)
     {
         var user = await users.GetUserAsync(User);
+        _logger.LogInformation("Sales chart requested for user '{UserId}'. Type: {Type}, Period: {Period}", user?.Id, type, period);
+
         var data = type == "profit"
             ? await reports.ProfitChartAsync(period, user!.Id)
             : await reports.SalesChartAsync(period, user!.Id);
         return Json(data);
     }
 }
-
-

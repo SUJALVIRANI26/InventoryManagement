@@ -1,6 +1,8 @@
 using InventoryManagement.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace InventoryManagement.Data;
 
@@ -16,7 +18,9 @@ public static class DbSeeder
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var logger = scope.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger("DbSeeder");
 
+        logger?.LogInformation("Applying any pending database migrations...");
         await db.Database.MigrateAsync(); // or EnsureCreatedAsync() if you don't use migrations
 
         // 1. Ensure all application roles exist
@@ -24,10 +28,12 @@ public static class DbSeeder
         {
             if (!await roles.RoleExistsAsync(role))
             {
+                logger?.LogInformation("Creating default role '{Role}'.", role);
                 var roleResult = await roles.CreateAsync(new IdentityRole(role));
                 if (!roleResult.Succeeded)
                 {
                     var errors = string.Join("; ", roleResult.Errors.Select(e => e.Description));
+                    logger?.LogError("Failed to create role '{Role}': {Errors}", role, errors);
                     throw new InvalidOperationException($"Failed to create role '{role}': {errors}");
                 }
             }
@@ -37,6 +43,7 @@ public static class DbSeeder
         var admin = await users.FindByEmailAsync(AdminEmail);
         if (admin is null)
         {
+            logger?.LogInformation("Seeding default administrator '{AdminEmail}'...", AdminEmail);
             admin = new ApplicationUser
             {
                 UserName = AdminEmail,
@@ -51,6 +58,7 @@ public static class DbSeeder
             if (!createResult.Succeeded)
             {
                 var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
+                logger?.LogError("Failed to seed admin user: {Errors}", errors);
                 throw new InvalidOperationException($"Failed to seed admin user: {errors}");
             }
         }
@@ -58,7 +66,10 @@ public static class DbSeeder
         // 3. Ensure the admin user is in the Admin role
         if (!await users.IsInRoleAsync(admin, AppRoles.Admin))
         {
+            logger?.LogInformation("Adding admin user to '{AdminRole}' role.", AppRoles.Admin);
             await users.AddToRoleAsync(admin, AppRoles.Admin);
         }
+
+        logger?.LogInformation("Database seeding completed successfully.");
     }
 }

@@ -6,18 +6,27 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace InventoryManagement.Controllers;
 
 [Authorize(Roles = AppRoles.InventoryManager)]
-public class InventoryController(ApplicationDbContext db, ReportService reports) : Controller
+public class InventoryController(
+    ApplicationDbContext db,
+    ReportService reports,
+    ILogger<InventoryController>? logger = null) : Controller
 {
+    private readonly ILogger<InventoryController> _logger = logger ?? NullLogger<InventoryController>.Instance;
+
     public async Task<IActionResult> Index()
     {
         var low = await db.Products
             .Where(p => p.IsActive && p.CurrentStock <= p.ReorderLevel)
             .OrderBy(p => p.CurrentStock)
             .ToListAsync();
+
+        _logger.LogInformation("Inventory dashboard requested. Found {LowStockCount} low stock product(s).", low.Count);
 
         var vm = new InventoryDashboardViewModel
         {
@@ -33,8 +42,8 @@ public class InventoryController(ApplicationDbContext db, ReportService reports)
     [HttpGet]
     public async Task<IActionResult> Chart(string period = ReportPeriod.Daily)
     {
+        _logger.LogInformation("Inventory purchases chart requested for period '{Period}'.", period);
         var data = await reports.PurchaseChartAsync(period);
         return Json(data);
     }
 }
-

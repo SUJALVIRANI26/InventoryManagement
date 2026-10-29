@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using InventoryManagement.Data;
 using InventoryManagement.Models;
 using InventoryManagement.Models.ViewModels;
@@ -9,11 +9,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace InventoryManagement.Controllers
 {
     [Authorize(Roles = AppRoles.SalesTeam)]
-    public class SaleOrdersController(ApplicationDbContext db, IInventoryService inventory, UserManager<ApplicationUser> users) : Controller
+    public class SaleOrdersController(
+        ApplicationDbContext db,
+        IInventoryService inventory,
+        UserManager<ApplicationUser> users,
+        ILogger<SaleOrdersController>? logger = null) : Controller
     {
+        private readonly ILogger<SaleOrdersController> _logger = logger ?? NullLogger<SaleOrdersController>.Instance;
         public async Task<IActionResult> Index()
         {
             var user = await users.GetUserAsync(User);
@@ -48,17 +56,21 @@ namespace InventoryManagement.Controllers
             model = await BuildForm(model);
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Sale order creation validation failed for customer '{CustomerName}'.", model.CustomerName);
                 return View(model);
             }
 
             var user = await users.GetUserAsync(User);
             try
             {
+                _logger.LogInformation("Placing sale order for customer '{CustomerName}' by user '{UserId}'.", model.CustomerName, user?.Id);
                 var sale = await inventory.PlaceSaleAsync(
                     user!.Id,
                     model.CustomerName,
                     model.Lines.Select(l => (l.ProductId, l.Quantity, l.UnitPrice)),
                     model.Notes);
+
+                _logger.LogInformation("Sale order #{SaleOrderId} created with status '{Status}'.", sale.Id, sale.Status);
 
                 TempData["Status"] = sale.Status switch
                 {
@@ -71,6 +83,7 @@ namespace InventoryManagement.Controllers
             }
             catch (InvalidOperationException ex)
             {
+                _logger.LogWarning(ex, "InvalidOperationException while placing sale order for customer '{CustomerName}'.", model.CustomerName);
                 ModelState.AddModelError(string.Empty, ex.Message);
                 return View(model);
             }
@@ -84,16 +97,19 @@ namespace InventoryManagement.Controllers
             var owns = await db.SaleOrders.AnyAsync(s => s.Id == id && s.SalesUserId == user!.Id);
             if (!owns)
             {
+                _logger.LogWarning("User '{UserId}' attempted to proceed sale order #{SaleOrderId} without ownership.", user?.Id, id);
                 return NotFound();
             }
 
             try
             {
+                _logger.LogInformation("User '{UserId}' proceeding sale order #{SaleOrderId}.", user?.Id, id);
                 await inventory.ProceedSaleAsync(id);
                 TempData["Status"] = $"Sale #{id} can proceed and is now completed. Backlog was fulfilled.";
             }
             catch (InvalidOperationException ex)
             {
+                _logger.LogWarning(ex, "Failed to proceed sale order #{SaleOrderId}.", id);
                 TempData["Error"] = ex.Message;
             }
 

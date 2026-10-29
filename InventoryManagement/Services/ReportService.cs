@@ -1,6 +1,8 @@
 using InventoryManagement.Data;
 using InventoryManagement.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace InventoryManagement.Services;
 
@@ -12,10 +14,13 @@ public class ReportPeriod
     public const string Yearly = "yearly";
 }
 
-public class ReportService(ApplicationDbContext db)
+public class ReportService(ApplicationDbContext db, ILogger<ReportService>? logger = null)
 {
+    private readonly ILogger<ReportService> _logger = logger ?? NullLogger<ReportService>.Instance;
+
     public async Task<Models.ViewModels.ChartPayload> ProfitChartAsync(string period, string? salesUserId = null)
     {
+        _logger.LogInformation("Generating profit chart. Period: {Period}, SalesUserId: {SalesUserId}", period, salesUserId ?? "All");
         var query = db.SaleOrders.Where(s => s.Status != SaleOrderStatus.Cancelled);
         if (!string.IsNullOrEmpty(salesUserId))
         {
@@ -28,6 +33,7 @@ public class ReportService(ApplicationDbContext db)
 
     public async Task<Models.ViewModels.ChartPayload> SalesChartAsync(string period, string? salesUserId = null)
     {
+        _logger.LogInformation("Generating sales chart. Period: {Period}, SalesUserId: {SalesUserId}", period, salesUserId ?? "All");
         var query = db.SaleOrders.Where(s => s.Status != SaleOrderStatus.Cancelled);
         if (!string.IsNullOrEmpty(salesUserId))
         {
@@ -40,6 +46,7 @@ public class ReportService(ApplicationDbContext db)
 
     public async Task<Models.ViewModels.ChartPayload> PurchaseChartAsync(string period, string? managerUserId = null)
     {
+        _logger.LogInformation("Generating purchase chart. Period: {Period}, ManagerUserId: {ManagerUserId}", period, managerUserId ?? "All");
         var query = db.PurchaseOrders.AsQueryable();
         if (!string.IsNullOrEmpty(managerUserId))
         {
@@ -52,6 +59,7 @@ public class ReportService(ApplicationDbContext db)
 
     public async Task<(string Name, int Qty)> MostSoldAsync()
     {
+        _logger.LogInformation("Calculating most sold product across non-cancelled sales.");
         var row = await db.SaleOrderItems
             .Where(i => i.SaleOrder.Status != SaleOrderStatus.Cancelled)
             .Include(i => i.Product)

@@ -32,6 +32,11 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Home/AccessDenied";
 });
 
+if (builder.Configuration.GetValue<int?>("BacklogPolicy:CancellationDays") is int configuredDays && configuredDays > 0)
+{
+    BacklogPolicy.CancellationDays = configuredDays;
+}
+
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddHostedService<BacklogExpiryService>();
 builder.Services.AddScoped<ReportService>();

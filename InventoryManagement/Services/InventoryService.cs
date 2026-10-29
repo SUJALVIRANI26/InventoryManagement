@@ -50,6 +50,8 @@ public class InventoryService(ApplicationDbContext db, ILogger<InventoryService>
             throw new InvalidOperationException("Add at least one purchase line.");
         }
 
+        _logger.LogInformation("Processing purchase receipt with {LineCount} line(s) for supplier {SupplierId}.", items.Count, supplierId);
+
         var purchase = new PurchaseOrder
         {
             SupplierId = supplierId,
@@ -155,6 +157,9 @@ public class InventoryService(ApplicationDbContext db, ILogger<InventoryService>
             var pending = requested - fulfillNow;
             if (pending > 0)
             {
+                _logger.LogWarning("Insufficient stock for product {ProductName} (ID: {ProductId}). Requested: {Requested}, Fulfilled: {Fulfilled}, Backlog created: {PendingQuantity}.",
+                    product.Name, product.Id, requested, fulfillNow, pending);
+
                 sale.BacklogItems.Add(new BacklogItem
                 {
                     ProductId = product.Id,
@@ -186,6 +191,7 @@ public class InventoryService(ApplicationDbContext db, ILogger<InventoryService>
 
         if (sale.Status != SaleOrderStatus.ReadyToProceed)
         {
+            _logger.LogWarning("Cannot proceed sale order #{SaleOrderId}: status is '{Status}'.", saleOrderId, sale.Status);
             throw new InvalidOperationException("Order is not ready to proceed. Open backlog must be fulfilled first.");
         }
 
@@ -198,7 +204,13 @@ public class InventoryService(ApplicationDbContext db, ILogger<InventoryService>
 
     public async Task<int> ExpireBackloggedOrdersAsync()
     {
-        var cutoff = DateTime.UtcNow.AddDays(-BacklogPolicy.CancellationDays);
+        if (BacklogPolicy.CancellationDays <= 0)
+        {
+            return 0;
+        }
+
+        //var cutoff = DateTime.UtcNow.AddDays(-BacklogPolicy.CancellationDays);
+        var cutoff = DateTime.UtcNow.AddMinutes(-1);
         var expiredOrders = await db.SaleOrders
             .Include(s => s.Items).ThenInclude(i => i.Product)
             .Include(s => s.BacklogItems)
@@ -263,6 +275,9 @@ public class InventoryService(ApplicationDbContext db, ILogger<InventoryService>
             }
 
             RecalculateSale(backlog.SaleOrder, createdNow: false);
+
+            _logger.LogInformation("Allocated {Allocated} units of product {ProductName} to backlog item {BacklogItemId} for sale #{SaleOrderId}. Fully fulfilled: {IsFulfilled}.",
+                allocate, product.Name, backlog.Id, backlog.SaleOrderId, backlog.IsFulfilled);
 
             var message = backlog.IsFulfilled
                 ? $"Backlog for sale #{backlog.SaleOrderId} ({product.Name}) is fulfilled. Allocated {allocate} units. Remaining stock: {product.CurrentStock}. Order can proceed."

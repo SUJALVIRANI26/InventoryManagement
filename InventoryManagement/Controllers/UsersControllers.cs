@@ -1,4 +1,4 @@
-﻿using InventoryManagement.Data;
+using InventoryManagement.Data;
 using InventoryManagement.Models;
 using InventoryManagement.Models.ViewModels;
 using InventoryManagement.Services;
@@ -6,15 +6,22 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace InventoryManagement.Controllers
 {
     [Authorize(Roles = AppRoles.Admin)]
-    public class UsersController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager) : Controller
+    public class UsersController(
+        UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        ILogger<UsersController>? logger = null) : Controller
     {
+        private readonly ILogger<UsersController> _logger = logger ?? NullLogger<UsersController>.Instance;
+
         public async Task<IActionResult> Index()
         {
+            _logger.LogInformation("Retrieving all users for administrative review.");
             var users = await userManager.Users.OrderBy(u => u.FullName).ToListAsync();
             var rows = new List<UserListItemViewModel>();
             foreach (var user in users)
@@ -25,14 +32,18 @@ namespace InventoryManagement.Controllers
             }
             return View(rows);
         }
+
         public IActionResult Create()
         {
             return View(new UserFormViewModel());
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(UserFormViewModel model)
         {
+            _logger.LogInformation("Admin attempting to create user with email '{Email}' and role '{Role}'.", model.Email, model.Role);
+
             if (model.Role is not (AppRoles.InventoryManager or AppRoles.SalesTeam))
             {
                 ModelState.AddModelError(nameof(model.Role), "Admin can only create inventory managers or sales team users.");
@@ -43,6 +54,7 @@ namespace InventoryManagement.Controllers
             }
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("User creation failed validation for email '{Email}'.", model.Email);
                 return View(model);
             }
             if (!await roleManager.RoleExistsAsync(model.Role))
@@ -54,6 +66,7 @@ namespace InventoryManagement.Controllers
                     {
                         ModelState.AddModelError(string.Empty, error.Description);
                     }
+                    _logger.LogWarning("Failed to ensure role '{Role}'.", model.Role);
                     return View(model);
                 }
             }
@@ -72,6 +85,7 @@ namespace InventoryManagement.Controllers
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
+                _logger.LogWarning("Failed to create user account for '{Email}'.", model.Email);
                 return View(model);
             }
             var assignment = await userManager.AddToRoleAsync(user, model.Role);
@@ -81,21 +95,26 @@ namespace InventoryManagement.Controllers
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
+                _logger.LogWarning("Failed to assign role '{Role}' to user '{Email}'.", model.Role, model.Email);
                 return View(model);
             }
+            _logger.LogInformation("Successfully created user '{Email}' (ID: {UserId}) with role '{Role}'.", user.Email, user.Id, model.Role);
             TempData["Status"] = "User created.";
             return RedirectToAction(nameof(Index));
         }
+
         public async Task<IActionResult> Edit(string id)
         {
             var user = await userManager.FindByIdAsync(id);
             if (user is null)
             {
+                _logger.LogWarning("User with ID {UserId} not found for editing.", id);
                 return NotFound();
             }
             var roles = await userManager.GetRolesAsync(user);
             if (roles.Contains(AppRoles.Admin))
             {
+                _logger.LogWarning("Attempted to edit the seeded admin account ID {UserId} was blocked.", id);
                 TempData["Error"] = "The seeded admin account cannot be edited here.";
                 return RedirectToAction(nameof(Index));
             }
@@ -108,6 +127,7 @@ namespace InventoryManagement.Controllers
                 IsActive = user.IsActive
             });
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(UserFormViewModel model)
@@ -123,10 +143,12 @@ namespace InventoryManagement.Controllers
             var user = await userManager.FindByIdAsync(model.Id);
             if (user is null)
             {
+                _logger.LogWarning("User with ID {UserId} not found for edit update.", model.Id);
                 return NotFound();
             }
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("User update failed validation for user ID {UserId}.", model.Id);
                 return View(model);
             }
             user.FullName = model.FullName;
@@ -140,6 +162,7 @@ namespace InventoryManagement.Controllers
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
+                _logger.LogWarning("Failed to update user entity for ID {UserId}.", model.Id);
                 return View(model);
             }
             var currentRoles = await userManager.GetRolesAsync(user);
@@ -155,12 +178,15 @@ namespace InventoryManagement.Controllers
                     {
                         ModelState.AddModelError(string.Empty, error.Description);
                     }
+                    _logger.LogWarning("Failed to reset password for user ID {UserId}.", model.Id);
                     return View(model);
                 }
             }
+            _logger.LogInformation("Successfully updated user '{Email}' (ID: {UserId}).", user.Email, user.Id);
             TempData["Status"] = "User updated.";
             return RedirectToAction(nameof(Index));
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(string id)
@@ -168,15 +194,18 @@ namespace InventoryManagement.Controllers
             var user = await userManager.FindByIdAsync(id);
             if (user is null)
             {
+                _logger.LogWarning("User with ID {UserId} not found for deletion.", id);
                 return NotFound();
             }
             var roles = await userManager.GetRolesAsync(user);
             if (roles.Contains(AppRoles.Admin))
             {
+                _logger.LogWarning("Attempted to delete the seeded admin account ID {UserId} was blocked.", id);
                 TempData["Error"] = "Cannot delete the admin account.";
                 return RedirectToAction(nameof(Index));
             }
             await userManager.DeleteAsync(user);
+            _logger.LogInformation("Successfully deleted user '{Email}' (ID: {UserId}).", user.Email, id);
             TempData["Status"] = "User deleted.";
             return RedirectToAction(nameof(Index));
         }
